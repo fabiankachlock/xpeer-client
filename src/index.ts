@@ -1,1 +1,5 @@
-export const myPackage = (taco = ''): string => `${taco} from my package`;
+export class XPeer {
+  connect(): void {
+    console.log('wip');
+  }
+}
