@@ -32,10 +32,8 @@ export class Awaiter<T = any> {
         }
       }
 
-      if (data) {
-        return resolve(data);
-      }
-      return reject(new Error('Awaiter: No data received'));
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      return resolve(data!);
     };
   }
 }
