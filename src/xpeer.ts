@@ -22,8 +22,8 @@ export interface XPeer {
   readonly isVirtual: boolean;
   ping(): Promise<boolean>;
   sendMessage(msg: string): Promise<XPeerResponse>;
-  on(event: 'message', callback: XPeerCallback<string>): void;
-  once(event: 'message', callback: XPeerCallback<string>): void;
+  // on(event: 'message', callback: XPeerCallback<string>): void;
+  // once(event: 'message', callback: XPeerCallback<string>): void;
 }
 
 export interface XVPeer<S extends XPeerState = XPeerState> extends XPeer {
@@ -33,15 +33,16 @@ export interface XVPeer<S extends XPeerState = XPeerState> extends XPeer {
   patchState(state: S): Promise<XPeerResponse>;
   putState(state: S): Promise<XPeerResponse>;
 
-  on(event: 'state', callback: XPeerCallback<S>): void;
-  on(event: 'message', callback: XPeerCallback<string>): void;
+  // on(event: 'state', callback: XPeerCallback<S>): void;
+  // on(event: 'message', callback: XPeerCallback<string>): void;
 
-  once(event: 'state', callback: XPeerCallback<S>): void;
-  once(event: 'message', callback: XPeerCallback<string>): void;
+  // once(event: 'state', callback: XPeerCallback<S>): void;
+  // once(event: 'message', callback: XPeerCallback<string>): void;
 }
 
 export enum XPeerIncomingMessageType {
   MSG_SEND = 'recvPeer',
+  MSG_SUCCESS = 'oprResOk',
   MSG_PING = 'sendPing',
   MSG_PONG = 'sendPong',
   MSG_PEER_ID = 'gPeerCId',

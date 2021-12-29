@@ -49,7 +49,7 @@ export class XPeerClient {
     console.log('[Client] message in final handler');
     if (
       message.type === XPeerIncomingMessageType.MSG_PEER_ID &&
-      this.peerId === DEFAULT_PEER_ID
+      message.sender !== this.peerId
     ) {
       console.log('[Client] received id:', message.payload);
       this.peerId = message.payload;
@@ -62,6 +62,8 @@ export class XPeerClient {
           ''
         )
       );
+    } else if (message.type === XPeerIncomingMessageType.MSG_SEND) {
+      console.log(`[${message.sender}] received ${message.payload}`);
     }
   }
 
@@ -83,6 +85,7 @@ export class XPeerClient {
           message.type === XPeerIncomingMessageType.MSG_PONG &&
           message.sender === id
         ) {
+          console.log(`[Client] ping ok ${id}`);
           foundPeer = true;
           awaiter.callback({});
         } else if (
@@ -101,17 +104,61 @@ export class XPeerClient {
     return foundPeer;
   }
 
-  // public async getPeer(id: string): Promise<XPeer | XVPeer | undefined> {
-  //   return this.createPeerObject(id);
-  // }
+  public async getPeer(id: string): Promise<XPeer | undefined> {
+    const available = await this.ping(id);
+    if (available) {
+      return this.createPeerObject(id);
+    }
+    return undefined;
+  }
 
-  // private createPeerObject(id: string): XPeer {
-  //   return {
-  //     id: id,
-  //     isVirtual: false,
-  //     sendMessage: msg => {},
-  //     on: (event, callback) => {},
-  //     once: (event, callback) => {},
-  //   };
-  // }
+  private createPeerObject(id: string): XPeer {
+    return {
+      id: id,
+      isVirtual: false,
+      ping: () => this.ping(id),
+      sendMessage: async msg => {
+        let error: string | undefined = undefined;
+        this.openTask = true;
+        await this.tasks.execute(async () => {
+          const awaiter = new Awaiter();
+          await this.connection.send(
+            XPeerMessageBuilder.create(
+              XPeerOutgoingMessageType.OPR_SEND_DIRECT,
+              id,
+              msg
+            )
+          );
+
+          this.forwardMessageToTask = message => {
+            if (
+              message.type === XPeerIncomingMessageType.MSG_SUCCESS &&
+              message.sender === this.peerId &&
+              message.payload === id
+            ) {
+              awaiter.callback({});
+            } else if (
+              message.type === XPeerIncomingMessageType.MSG_ERROR &&
+              message.sender === this.peerId
+            ) {
+              error = message.payload;
+              awaiter.callback({});
+            } else {
+              this.messageHandler(message);
+            }
+          };
+          await awaiter.promise;
+          this.openTask = false;
+        });
+        if (error) {
+          return {
+            message: error,
+          };
+        }
+        return {
+          success: true,
+        };
+      },
+    };
+  }
 }
