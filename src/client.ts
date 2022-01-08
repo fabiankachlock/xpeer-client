@@ -1,3 +1,4 @@
+import { Peer } from './peer.js';
 import { Awaiter } from './helper/awaiter.js';
 import { TaskQueue } from './helper/queue.js';
 import { XPeerWSConnection } from './ws/connection.js';
@@ -9,6 +10,8 @@ import {
   XPeer,
   XPeerIncomingMessage,
   XPeerIncomingMessageType,
+  XPeerMessageHandler,
+  XPeerOperationalClient,
   XPeerOutgoingMessageType,
 } from './xpeer.js';
 
@@ -23,12 +26,20 @@ export class XPeerClient {
 
   private openTask = false;
 
+  private messageHandlers: XPeerMessageHandler[];
+
   constructor(public readonly serverUrl: string) {
     this.connection = new XPeerWSConnection(serverUrl);
     this.connection.messageForwarder =
       XPeerMessageParsingInterceptor.messageForwarder(
         this.messageDistributer
       ).callback;
+
+    this.messageHandlers = [
+      this.idMessageHandler,
+      this.pingMessageHandler,
+      this.defaultMessageHandler,
+    ];
   }
 
   private messageDistributer = (message: XPeerIncomingMessage) => {
@@ -47,29 +58,50 @@ export class XPeerClient {
 
   private messageHandler(message: XPeerIncomingMessage) {
     console.log('[Client] message in final handler');
-    if (
-      message.type === XPeerIncomingMessageType.MSG_PEER_ID &&
-      message.sender !== this.peerId
-    ) {
-      console.log('[Client] received id:', message.payload);
-      this.peerId = message.payload;
-    } else if (message.type === XPeerIncomingMessageType.MSG_PING) {
-      console.log('[Client] received ping from', message.sender);
-      this.connection.send(
-        XPeerMessageBuilder.create(
-          XPeerOutgoingMessageType.OPR_PONG,
-          message.sender,
-          ''
-        )
-      );
-    } else if (message.type === XPeerIncomingMessageType.MSG_SEND) {
-      console.log(`[${message.sender}] received ${message.payload}`);
+    for (const handler of this.messageHandlers) {
+      if (handler.guard(message)) {
+        console.log(handler);
+        handler.handler(message);
+        break;
+      }
     }
   }
 
-  public disconnect(): void {
-    this.connection.close();
-  }
+  private defaultMessageHandler: XPeerMessageHandler = {
+    // handle incoming messages
+    guard: message => message.type === XPeerIncomingMessageType.MSG_SEND,
+    handler: message =>
+      console.log(`[${message.sender}] received ${message.payload}`),
+  };
+
+  private pingMessageHandler: XPeerMessageHandler = {
+    // handle incoming pings
+    guard: message => message.type === XPeerIncomingMessageType.MSG_PING,
+    handler: message => {
+      console.log('[Client] received ping from', message.sender);
+      this.tasks.execute(async () => {
+        await this.connection.send(
+          XPeerMessageBuilder.create(
+            XPeerOutgoingMessageType.OPR_PONG,
+            message.sender,
+            ''
+          )
+        );
+      });
+    },
+  };
+
+  private idMessageHandler: XPeerMessageHandler = {
+    // handle id assignment
+    guard: message =>
+      message.type === XPeerIncomingMessageType.MSG_PEER_ID &&
+      message.sender === message.payload &&
+      message.sender !== this.peerId,
+    handler: message => {
+      console.log('[Client] received id:', message.payload);
+      this.peerId = message.payload;
+    },
+  };
 
   public async ping(id: string): Promise<boolean> {
     let foundPeer = false;
@@ -107,58 +139,45 @@ export class XPeerClient {
   public async getPeer(id: string): Promise<XPeer | undefined> {
     const available = await this.ping(id);
     if (available) {
-      return this.createPeerObject(id);
+      return new Peer(id, this.createConnectionForwardRef());
     }
     return undefined;
   }
 
-  private createPeerObject(id: string): XPeer {
-    return {
-      id: id,
-      isVirtual: false,
-      ping: () => this.ping(id),
-      sendMessage: async msg => {
-        let error: string | undefined = undefined;
+  private createConnectionForwardRef = (): XPeerOperationalClient => {
+    const client: XPeerOperationalClient = {
+      peerId: this.peerId,
+      ping: (id: string) => this.ping(id),
+      send: (msg: string) => this.connection.send(msg),
+      getMessageSource: () => ({
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        setGuard: () => {},
+        receiveMessage: () => Promise.resolve(undefined),
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        redirectBack: () => {},
+      }),
+      executeTask: async task => {
         this.openTask = true;
         await this.tasks.execute(async () => {
-          const awaiter = new Awaiter();
-          await this.connection.send(
-            XPeerMessageBuilder.create(
-              XPeerOutgoingMessageType.OPR_SEND_DIRECT,
-              id,
-              msg
-            )
-          );
-
-          this.forwardMessageToTask = message => {
-            if (
-              message.type === XPeerIncomingMessageType.MSG_SUCCESS &&
-              message.sender === this.peerId &&
-              message.payload === id
-            ) {
-              awaiter.callback({});
-            } else if (
-              message.type === XPeerIncomingMessageType.MSG_ERROR &&
-              message.sender === this.peerId
-            ) {
-              error = message.payload;
-              awaiter.callback({});
-            } else {
-              this.messageHandler(message);
-            }
-          };
-          await awaiter.promise;
-          this.openTask = false;
+          await task({
+            receiveMessage: handler => {
+              this.forwardMessageToTask = msg => {
+                const result = handler(msg);
+                if (!result) {
+                  this.messageHandler(msg);
+                }
+              };
+            },
+          });
         });
-        if (error) {
-          return {
-            message: error,
-          };
-        }
-        return {
-          success: true,
-        };
+
+        this.openTask = false;
       },
     };
+    return client;
+  };
+
+  public disconnect(): void {
+    this.connection.close();
   }
 }

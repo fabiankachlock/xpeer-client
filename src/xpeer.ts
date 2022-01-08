@@ -17,6 +17,25 @@ export type XPeerCallback<T, P extends XPeer | XVPeer = XPeer | XVPeer> = (
   peer: P
 ) => void;
 
+export interface XPeerMessageHandler {
+  guard: (msg: XPeerIncomingMessage) => boolean;
+  handler: (msg: XPeerIncomingMessage) => void;
+}
+
+export interface XPeerOperationalClient {
+  peerId: string;
+  ping(id: string): Promise<boolean>;
+  send(message: string): Promise<void>;
+  getMessageSource(id: string): XPeerMessageSource;
+  executeTask(
+    func: (params: {
+      receiveMessage: (
+        handler: (message: XPeerIncomingMessage) => boolean
+      ) => void;
+    }) => Promise<void>
+  ): Promise<void>;
+}
+
 export interface XPeer {
   readonly id: string;
   readonly isVirtual: boolean;
@@ -38,6 +57,18 @@ export interface XVPeer<S extends XPeerState = XPeerState> extends XPeer {
 
   // once(event: 'state', callback: XPeerCallback<S>): void;
   // once(event: 'message', callback: XPeerCallback<string>): void;
+}
+
+export interface XPeerMessageSource {
+  setGuard(guard: (message: XPeerIncomingMessage) => boolean): void;
+  receiveMessage(): Promise<
+    | {
+        message: XPeerIncomingMessage;
+        wasLast: boolean;
+      }
+    | undefined
+  >;
+  redirectBack(message: XPeerIncomingMessage): void;
 }
 
 export enum XPeerIncomingMessageType {
