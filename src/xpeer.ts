@@ -25,10 +25,10 @@ export interface XPeerMessageHandler {
 export interface XPeerOperationalClient {
   peerId: string;
   ping(id: string): Promise<boolean>;
-  send(message: string): Promise<void>;
   getMessageSource(id: string): XPeerMessageSource;
   executeTask(
     func: (params: {
+      send(message: string): Promise<void>;
       receiveMessage: (
         handler: (message: XPeerIncomingMessage) => boolean
       ) => void;
@@ -64,7 +64,7 @@ export interface XPeerMessageSource {
   receiveMessage(): Promise<
     | {
         message: XPeerIncomingMessage;
-        wasLast: boolean;
+        isClosing: boolean;
       }
     | undefined
   >;

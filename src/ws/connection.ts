@@ -1,5 +1,4 @@
 import { Awaiter } from '../helper/awaiter.js';
-import { XPeerMessageParser } from './messages.js';
 
 export type XPeerWSConnectionOptions = {
   retries: number;

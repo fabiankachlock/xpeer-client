@@ -148,7 +148,6 @@ export class XPeerClient {
     const client: XPeerOperationalClient = {
       peerId: this.peerId,
       ping: (id: string) => this.ping(id),
-      send: (msg: string) => this.connection.send(msg),
       getMessageSource: () => ({
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         setGuard: () => {},
@@ -160,6 +159,7 @@ export class XPeerClient {
         this.openTask = true;
         await this.tasks.execute(async () => {
           await task({
+            send: (msg: string) => this.connection.send(msg),
             receiveMessage: handler => {
               this.forwardMessageToTask = msg => {
                 const result = handler(msg);

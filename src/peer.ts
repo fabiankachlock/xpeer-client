@@ -28,13 +28,12 @@ export class Peer implements XPeer {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const message = await this.messageSource.receiveMessage();
+      if (message?.isClosing) {
+        return;
+      }
 
       if (message?.message) {
         console.log(message);
-      }
-
-      if (message?.wasLast) {
-        return;
       }
     }
   }
@@ -46,9 +45,9 @@ export class Peer implements XPeer {
   public async sendMessage(msg: string): Promise<XPeerResponse> {
     let error: string | undefined = undefined;
 
-    await this.client.executeTask(async ({ receiveMessage }) => {
+    await this.client.executeTask(async ({ receiveMessage, send }) => {
       const awaiter = new Awaiter();
-      await this.client.send(
+      await send(
         XPeerMessageBuilder.create(
           XPeerOutgoingMessageType.OPR_SEND_DIRECT,
           this.id,
