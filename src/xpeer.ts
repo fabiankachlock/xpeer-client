@@ -1,4 +1,4 @@
-import { Subscription } from 'listner/subscription';
+import { Subscription } from './listener/subscription.js';
 
 export type XPeerError = {
   message: string;
@@ -76,6 +76,7 @@ export interface XPeerClient {
   disconnect(): void;
 }
 
+// @internal
 export enum XPeerIncomingMessageType {
   MSG_SEND = 'recvPeer',
   MSG_SUCCESS = 'oprResOk',
@@ -86,6 +87,7 @@ export enum XPeerIncomingMessageType {
   MSG_STATE_UPDATE = 'stateMut',
 }
 
+// @internal
 export enum XPeerOutgoingMessageType {
   OPR_PING = 'sendPing',
   OPR_PONG = 'sendPong',
@@ -103,3 +105,8 @@ export type XPeerIncomingMessage = {
   sender: string;
   payload: string;
 };
+
+// @internal
+export enum XPeerEvent {
+  message = 'message',
+}

@@ -17,8 +17,7 @@
     "stripInternal": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node",
-    "types": ["nanoid"]
+    "moduleResolution": "node"
   },
   "include": ["src/**/*.ts"]
 }

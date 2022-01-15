@@ -17,7 +17,7 @@ import {
   XPeerResponse,
   XPeerVPeer,
 } from './xpeer.js';
-import { createXPeerResponse } from 'helper/error.js';
+import { createXPeerResponse } from './helper/error.js';
 
 const DEFAULT_PEER_ID = '<<<no-peer-id>>>';
 
@@ -161,6 +161,8 @@ export class Client implements XPeerClient {
       getMessageSource: () => ({
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         setGuard: () => {},
+        // eslint-disable-next-line @typescript-eslint/no-empty-function
+        setHandler: () => {},
         receiveMessage: () => Promise.resolve(undefined),
         // eslint-disable-next-line @typescript-eslint/no-empty-function
         redirectBack: () => {},

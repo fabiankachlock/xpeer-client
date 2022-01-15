@@ -1,5 +1,5 @@
-import { ListenerManager } from 'listner/listenerManager.js';
-import { Subscription } from 'listner/subscription.js';
+import { ListenerManager } from './listener/listenerManager.js';
+import { Subscription } from './listener/subscription.js';
 import { Awaiter } from './helper/awaiter.js';
 import { createXPeerResponse } from './helper/error.js';
 import { XPeerMessageBuilder } from './ws/messages.js';
@@ -11,6 +11,8 @@ import {
   XPeerOperationalClient,
   XPeerOutgoingMessageType,
   XPeerResponse,
+  XPeerEvent,
+  XPeerCallback,
 } from './xpeer.js';
 
 export class Peer implements XPeerPeer {
@@ -18,7 +20,7 @@ export class Peer implements XPeerPeer {
 
   private readonly messageSource: XPeerMessageSource;
 
-  private listenerManager = new ListenerManager();
+  private listenerManager = new ListenerManager<string>();
 
   constructor(
     public readonly id: string,
@@ -38,17 +40,11 @@ export class Peer implements XPeerPeer {
     console.log(message);
   };
 
-  public on(
-    event: 'message',
-    handler: (msg: string, peer: XPeerPeer, sub: Subscription) => void
-  ): Subscription {
-    return this.listenerManager.register('s', handler);
+  public on(event: 'message', handler: XPeerCallback<string>): Subscription {
+    return this.listenerManager.register(XPeerEvent.message, handler);
   }
 
-  public once(
-    event: 'message',
-    handler: (msg: string, peer: XPeerPeer, sub: Subscription) => void
-  ): Subscription {
+  public once(event: 'message', handler: XPeerCallback<string>): Subscription {
     return this.listenerManager.register('s', handler);
   }
 

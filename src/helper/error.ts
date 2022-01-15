@@ -1,4 +1,4 @@
-import { XPeerResponse } from 'xpeer';
+import { XPeerResponse } from '../xpeer.js';
 
 export const createXPeerResponse = (error?: string): XPeerResponse => {
   if (error) {
