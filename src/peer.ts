@@ -7,7 +7,6 @@ import {
   XPeerPeer,
   XPeerIncomingMessage,
   XPeerIncomingMessageType,
-  XPeerMessageSource,
   XPeerOperationalClient,
   XPeerOutgoingMessageType,
   XPeerResponse,
