@@ -1,12 +1,15 @@
 import { Awaiter } from './awaiter.js';
 
+// @internal
 type Task<T> = () => Promise<T>;
 
+// @internal
 type QueueItem<T> = {
   task: Task<T>;
   awaiter: Awaiter<T>;
 };
 
+// @internal
 export class TaskQueue {
   private _queue: Array<QueueItem<unknown>>;
 

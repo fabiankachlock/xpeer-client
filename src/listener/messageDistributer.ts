@@ -1,5 +1,6 @@
 import { XPeerIncomingMessage, XPeerMessageSource } from '../xpeer.js';
 
+// @internal
 export class MessageDistributer<T = XPeerIncomingMessage> {
   private entryCount = Math.round(Math.random() * 1_000_000);
 

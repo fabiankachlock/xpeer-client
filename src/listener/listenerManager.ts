@@ -1,6 +1,7 @@
 import { XPeerCallback, XPeerPeer, XPeerVPeer } from '../xpeer.js';
 import { Subscription } from './subscription.js';
 
+// @internal
 type Entry<T> = {
   id: string;
   handler: XPeerCallback<T>;
@@ -24,7 +25,7 @@ export class ListenerManager<T> {
     return (++this.handlerCount).toString(16);
   }
 
-  trigger(event: string, value: T, peer: XPeerPeer | XPeerVPeer): void {
+  public trigger(event: string, value: T, peer: XPeerPeer | XPeerVPeer): void {
     const handlers = this.handlers[event];
     if (!handlers || !Array.isArray(handlers)) return;
     for (const handler of handlers) {
@@ -32,7 +33,7 @@ export class ListenerManager<T> {
     }
   }
 
-  register(event: string, handler: XPeerCallback<T>): Subscription {
+  public register(event: string, handler: XPeerCallback<T>): Subscription {
     const id = this.nextId();
     const entry: Entry<T> = {
       id: id,

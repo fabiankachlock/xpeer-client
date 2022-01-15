@@ -1,3 +1,4 @@
+// @internal
 export class Logger {
   static Default = new Logger();
   static Client = Logger.Default.withPrefix('[Client]');

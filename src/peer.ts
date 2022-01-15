@@ -15,7 +15,7 @@ import {
 } from './xpeer.js';
 
 export class Peer implements XPeerPeer {
-  readonly isVirtual: boolean;
+  public readonly isVirtual: boolean;
 
   private listenerManager = new ListenerManager<string>();
 

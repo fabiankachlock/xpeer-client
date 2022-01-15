@@ -24,38 +24,38 @@ const DEFAULT_PEER_ID = '<<<no-peer-id>>>';
 export class Client implements XPeerClient {
   private connection: WSConnection;
 
-  private tasks = new TaskQueue();
+  private tasksQueue = new TaskQueue();
 
   private peerId = DEFAULT_PEER_ID;
 
-  private openTask = false;
+  private hasOpenTask = false;
 
-  private messageHandlers: XPeerMessageHandler[];
+  private internalMessageHandlers: XPeerMessageHandler[];
 
-  private messageSource: MessageDistributer<XPeerIncomingMessage>;
+  private messageDistributer: MessageDistributer<XPeerIncomingMessage>;
 
   constructor(public readonly serverUrl: string) {
     this.connection = new WSConnection(serverUrl);
     this.connection.messageForwarder =
       XPeerMessageParsingInterceptor.messageForwarder(
-        this.messageDistributer
+        this.rootIncomingMessageHandler
       ).callback;
 
-    this.messageHandlers = [
-      this.idMessageHandler,
-      this.pingMessageHandler,
-      this.messageMessageHandler,
-      this.defaultMessageHandler,
+    this.internalMessageHandlers = [
+      this._idMessageHandler,
+      this._pingMessageHandler,
+      this._messageMessageHandler,
+      this._defaultMessageHandler,
     ];
 
-    this.messageSource = new MessageDistributer(
-      this.defaultMessageHandler.handler
+    this.messageDistributer = new MessageDistributer(
+      this._defaultMessageHandler.handler
     );
   }
 
-  private messageDistributer = (message: XPeerIncomingMessage) => {
+  private rootIncomingMessageHandler = (message: XPeerIncomingMessage) => {
     Logger.Client.debug('distributing:', message);
-    if (this.openTask) {
+    if (this.hasOpenTask) {
       Logger.Client.debug('forwarding to task');
       this.forwardMessageToTask(message);
     } else {
@@ -69,7 +69,7 @@ export class Client implements XPeerClient {
 
   private messageHandler(message: XPeerIncomingMessage) {
     Logger.Client.debug('message in handler');
-    for (const handler of this.messageHandlers) {
+    for (const handler of this.internalMessageHandlers) {
       if (handler.guard(message)) {
         handler.handler(message);
         break;
@@ -77,25 +77,25 @@ export class Client implements XPeerClient {
     }
   }
 
-  private defaultMessageHandler: XPeerMessageHandler = {
+  private _defaultMessageHandler: XPeerMessageHandler = {
     // handle incoming messages
     guard: () => true,
     handler: message =>
       Logger.Default.log(`[${message.sender}] received ${message.payload}`),
   };
 
-  private messageMessageHandler: XPeerMessageHandler = {
+  private _messageMessageHandler: XPeerMessageHandler = {
     // handle incoming messages
     guard: message => message.type === XPeerIncomingMessageType.MSG_SEND,
-    handler: message => this.messageSource.distribute(message),
+    handler: message => this.messageDistributer.distribute(message),
   };
 
-  private pingMessageHandler: XPeerMessageHandler = {
+  private _pingMessageHandler: XPeerMessageHandler = {
     // handle incoming pings
     guard: message => message.type === XPeerIncomingMessageType.MSG_PING,
     handler: message => {
       Logger.Client.debug('received ping from', message.sender);
-      this.tasks.execute(async () => {
+      this.tasksQueue.execute(async () => {
         await this.connection.send(
           XPeerMessageBuilder.create(
             XPeerOutgoingMessageType.OPR_PONG,
@@ -107,7 +107,7 @@ export class Client implements XPeerClient {
     },
   };
 
-  private idMessageHandler: XPeerMessageHandler = {
+  private _idMessageHandler: XPeerMessageHandler = {
     // handle id assignment
     guard: message =>
       message.type === XPeerIncomingMessageType.MSG_PEER_ID &&
@@ -121,8 +121,8 @@ export class Client implements XPeerClient {
 
   public async ping(id: string): Promise<boolean> {
     let foundPeer = false;
-    this.openTask = true;
-    await this.tasks.execute(async () => {
+    this.hasOpenTask = true;
+    await this.tasksQueue.execute(async () => {
       const awaiter = new Awaiter();
       Logger.Client.debug('sending ping to', id);
       await this.connection.send(
@@ -148,7 +148,7 @@ export class Client implements XPeerClient {
         }
       };
       await awaiter.promise;
-      this.openTask = false;
+      this.hasOpenTask = false;
     });
     return foundPeer;
   }
@@ -158,19 +158,19 @@ export class Client implements XPeerClient {
   ): Promise<XPeerPeer | XPeerVPeer | undefined> {
     const available = await this.ping(id);
     if (available) {
-      return new Peer(id, this.createConnectionForwardRef());
+      return new Peer(id, this.createOperationalClient());
     }
     return undefined;
   }
 
-  private createConnectionForwardRef = (): XPeerOperationalClient => {
+  private createOperationalClient = (): XPeerOperationalClient => {
     const client: XPeerOperationalClient = {
       peerId: this.peerId,
+      messageSource: this.messageDistributer.createMessageSource(),
       ping: (id: string) => this.ping(id),
-      messageSource: this.messageSource.createMessageSource(),
       executeTask: async task => {
-        this.openTask = true;
-        await this.tasks.execute(async () => {
+        this.hasOpenTask = true;
+        await this.tasksQueue.execute(async () => {
           await task({
             send: (msg: string) => this.connection.send(msg),
             receiveMessage: handler => {
@@ -183,8 +183,7 @@ export class Client implements XPeerClient {
             },
           });
         });
-
-        this.openTask = false;
+        this.hasOpenTask = false;
       },
     };
     return client;

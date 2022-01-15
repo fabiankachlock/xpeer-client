@@ -1,3 +1,4 @@
+// @internal
 export class Awaiter<T = any> {
   private invoker: (data: T | undefined | null) => void;
 
