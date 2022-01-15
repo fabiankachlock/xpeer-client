@@ -17,6 +17,7 @@ import {
   XPeerVPeer,
 } from './xpeer.js';
 import { MessageDistributer } from './listener/messageDistributer.js';
+import { Logger } from './helper/logger.js';
 
 const DEFAULT_PEER_ID = '<<<no-peer-id>>>';
 
@@ -53,9 +54,9 @@ export class Client implements XPeerClient {
   }
 
   private messageDistributer = (message: XPeerIncomingMessage) => {
-    console.log('[Client] received:', message);
+    Logger.Client.debug('distributing:', message);
     if (this.openTask) {
-      console.log('[Client] forward message to task');
+      Logger.Client.debug('forwarding to task');
       this.forwardMessageToTask(message);
     } else {
       this.messageHandler(message);
@@ -67,7 +68,7 @@ export class Client implements XPeerClient {
     () => {};
 
   private messageHandler(message: XPeerIncomingMessage) {
-    console.log('[Client] message in client handler');
+    Logger.Client.debug('message in handler');
     for (const handler of this.messageHandlers) {
       if (handler.guard(message)) {
         handler.handler(message);
@@ -80,7 +81,7 @@ export class Client implements XPeerClient {
     // handle incoming messages
     guard: () => true,
     handler: message =>
-      console.log(`[${message.sender}] received ${message.payload}`),
+      Logger.Default.log(`[${message.sender}] received ${message.payload}`),
   };
 
   private messageMessageHandler: XPeerMessageHandler = {
@@ -93,7 +94,7 @@ export class Client implements XPeerClient {
     // handle incoming pings
     guard: message => message.type === XPeerIncomingMessageType.MSG_PING,
     handler: message => {
-      console.log('[Client] received ping from', message.sender);
+      Logger.Client.debug('received ping from', message.sender);
       this.tasks.execute(async () => {
         await this.connection.send(
           XPeerMessageBuilder.create(
@@ -113,7 +114,7 @@ export class Client implements XPeerClient {
       message.sender === message.payload &&
       message.sender !== this.peerId,
     handler: message => {
-      console.log('[Client] received id:', message.payload);
+      Logger.Client.debug('[Client] received id:', message.payload);
       this.peerId = message.payload;
     },
   };
@@ -123,6 +124,7 @@ export class Client implements XPeerClient {
     this.openTask = true;
     await this.tasks.execute(async () => {
       const awaiter = new Awaiter();
+      Logger.Client.debug('sending ping to', id);
       await this.connection.send(
         XPeerMessageBuilder.create(XPeerOutgoingMessageType.OPR_PING, id, '')
       );
@@ -132,14 +134,14 @@ export class Client implements XPeerClient {
           message.type === XPeerIncomingMessageType.MSG_PONG &&
           message.sender === id
         ) {
-          console.log(`[Client] ping ok ${id}`);
+          Logger.Client.debug(`ping ok ${id}`);
           foundPeer = true;
           awaiter.callback({});
         } else if (
           message.type === XPeerIncomingMessageType.MSG_ERROR &&
           message.sender === this.peerId
         ) {
-          console.error(message.payload);
+          Logger.Client.error(message.payload);
           awaiter.callback({});
         } else {
           this.messageHandler(message);

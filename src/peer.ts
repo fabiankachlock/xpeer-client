@@ -34,7 +34,6 @@ export class Peer implements XPeerPeer {
   }
 
   private receiveMessage = (message: XPeerIncomingMessage): void => {
-    console.log('in peer handler:', message);
     this.listenerManager.trigger(XPeerEvent.message, message.payload, this);
   };
 

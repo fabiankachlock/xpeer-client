@@ -1,3 +1,4 @@
+import { Logger } from '../helper/logger.js';
 import { Awaiter } from '../helper/awaiter.js';
 
 // @internal
@@ -46,7 +47,7 @@ export class WSConnection {
       await this.connectionAwaiter.promise;
       return this.send(data);
     } else {
-      console.log(`[Socket] could not send to ${this.url}`);
+      Logger.Socket.warn(`could not send to ${this.url}`);
     }
   }
 
@@ -72,7 +73,7 @@ export class WSConnection {
   }
 
   private handleOpen = (): void => {
-    console.log(`[Socket] connected to ${this.url}`);
+    Logger.Socket.log(`connected to ${this.url}`);
     this.options.retriesLeft = this.options.retries;
     if (this.connectionAwaiter) {
       this.connectionAwaiter.callback();
@@ -80,29 +81,27 @@ export class WSConnection {
     }
   };
   private handleMessage = (event: MessageEvent): void => {
-    console.log(`[Socket] received from ${this.url}`);
-    console.log(event.data);
+    Logger.Socket.log(`received from ${this.url}`);
     this._messageForwarder(event.data);
   };
 
   private handleError = (error: Event): void => {
-    console.error(
-      `[ERR] [Socket] ${(error as unknown as Error).message ?? 'unknown'}`
+    Logger.Socket.error(
+      `[ERR] ${(error as unknown as Error).message ?? 'unknown'}`
     );
-    console.error(error);
   };
 
   private handleClose = (event: CloseEvent): void => {
     if (event.wasClean) {
-      console.log(`[Socket] disconnected from ${this.url}`);
+      Logger.Socket.log(`disconnected from ${this.url}`);
     } else {
-      console.log(`[Socket] connection died to  ${this.url}`);
+      Logger.Socket.log(`connection died to  ${this.url}`);
     }
-    console.log(`[Socket] retries left: ${this.options.retriesLeft}`);
+    Logger.Socket.debug(`retries left: ${this.options.retriesLeft}`);
 
     if (this.options.retriesLeft > 0) {
       this.options.retriesLeft = this.options.retriesLeft - 1;
-      console.log(`[Socket] retrying in ${this.options.retryInterval}ms`);
+      Logger.Socket.debug(`retrying in ${this.options.retryInterval}ms`);
       setTimeout(() => {
         this.connect();
       }, this.options.retryInterval);
