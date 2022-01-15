@@ -13,11 +13,14 @@ import {
   XPeerEvent,
   XPeerCallback,
 } from './xpeer.js';
+import { Logger } from 'helper/logger.js';
 
 export class Peer implements XPeerPeer {
   public readonly isVirtual: boolean;
 
   private listenerManager = new ListenerManager<string>();
+
+  private logger: Logger;
 
   constructor(
     public readonly id: string,
@@ -26,6 +29,7 @@ export class Peer implements XPeerPeer {
     this.isVirtual = false;
     this.client.messageSource.setGuard(message => message.sender === id);
     this.client.messageSource.setHandler(this.receiveMessage);
+    this.logger = Logger.Peer.withPrefix(`[${id}]`);
   }
 
   public ping(): Promise<boolean> {
@@ -33,6 +37,7 @@ export class Peer implements XPeerPeer {
   }
 
   private receiveMessage = (message: XPeerIncomingMessage): void => {
+    this.logger.debug('received message');
     this.listenerManager.trigger(XPeerEvent.message, message.payload, this);
   };
 
@@ -49,7 +54,7 @@ export class Peer implements XPeerPeer {
 
   public async sendMessage(msg: string): Promise<XPeerResponse> {
     let error: string | undefined = undefined;
-
+    this.logger.debug('sending message');
     await this.client.executeTask(async ({ receiveMessage, send }) => {
       const awaiter = new Awaiter();
       await send(
@@ -66,6 +71,7 @@ export class Peer implements XPeerPeer {
           message.sender === this.client.peerId &&
           message.payload === this.id
         ) {
+          this.logger.debug('message successful');
           awaiter.callback({});
           return true;
         } else if (
@@ -73,6 +79,7 @@ export class Peer implements XPeerPeer {
           message.sender === this.client.peerId
         ) {
           error = message.payload;
+          this.logger.error(error);
           awaiter.callback({});
           return true;
         }
