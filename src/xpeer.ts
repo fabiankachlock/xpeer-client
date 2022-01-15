@@ -1,3 +1,5 @@
+import { Subscription } from 'listner/subscription';
+
 export type XPeerError = {
   message: string;
 };
@@ -14,7 +16,8 @@ export type XPeerResponse =
 
 export type XPeerCallback<T, P extends XPeer | XVPeer = XPeer | XVPeer> = (
   data: T,
-  peer: P
+  peer: P,
+  sub: Subscription
 ) => void;
 
 export interface XPeerMessageHandler {
@@ -41,8 +44,8 @@ export interface XPeer {
   readonly isVirtual: boolean;
   ping(): Promise<boolean>;
   sendMessage(msg: string): Promise<XPeerResponse>;
-  // on(event: 'message', callback: XPeerCallback<string>): void;
-  // once(event: 'message', callback: XPeerCallback<string>): void;
+  on(event: 'message', callback: XPeerCallback<string>): Subscription;
+  once(event: 'message', callback: XPeerCallback<string>): Subscription;
 }
 
 export interface XVPeer<S extends XPeerState = XPeerState> extends XPeer {
@@ -61,13 +64,7 @@ export interface XVPeer<S extends XPeerState = XPeerState> extends XPeer {
 
 export interface XPeerMessageSource {
   setGuard(guard: (message: XPeerIncomingMessage) => boolean): void;
-  receiveMessage(): Promise<
-    | {
-        message: XPeerIncomingMessage;
-        isClosing: boolean;
-      }
-    | undefined
-  >;
+  setHandler(handler: (message: XPeerIncomingMessage) => void): void;
   redirectBack(message: XPeerIncomingMessage): void;
 }
 

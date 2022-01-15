@@ -35,7 +35,9 @@
     "url": "https://github.com/fabiankachlock/xpeer-client/issues"
   },
   "homepage": "https://github.com/fabiankachlock/xpeer-client#readme",
-  "dependencies": {},
+  "dependencies": {
+    "nanoid": "^3.1.30"
+  },
   "devDependencies": {
     "@types/jest": "^26.0.24",
     "@types/node": "^12.20.11",

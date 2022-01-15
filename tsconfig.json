@@ -13,9 +13,12 @@
     "alwaysStrict": true,
     "baseUrl": "src",
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "stripInternal": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node",
+    "types": ["nanoid"]
   },
   "include": ["src/**/*.ts", "test/**/*.ts"]
 }

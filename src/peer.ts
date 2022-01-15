@@ -1,8 +1,11 @@
+import { ListenerManager } from 'listner/listenerManager.js';
+import { Subscription } from 'listner/subscription.js';
 import { Awaiter } from './helper/awaiter.js';
 import { createXPeerResponse } from './helper/error.js';
 import { XPeerMessageBuilder } from './ws/messages.js';
 import {
   XPeer,
+  XPeerIncomingMessage,
   XPeerIncomingMessageType,
   XPeerMessageSource,
   XPeerOperationalClient,
@@ -15,6 +18,8 @@ export class Peer implements XPeer {
 
   private readonly messageSource: XPeerMessageSource;
 
+  private listenerManager = new ListenerManager();
+
   constructor(
     public readonly id: string,
     private readonly client: XPeerOperationalClient
@@ -22,24 +27,22 @@ export class Peer implements XPeer {
     this.isVirtual = false;
     this.messageSource = client.getMessageSource(id);
     this.messageSource.setGuard(message => message.sender === id);
-  }
-
-  private async run() {
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      const message = await this.messageSource.receiveMessage();
-      if (message?.isClosing) {
-        return;
-      }
-
-      if (message?.message) {
-        console.log(message);
-      }
-    }
+    this.messageSource.setHandler(this.receiveMessage);
   }
 
   public ping(): Promise<boolean> {
     return this.client.ping(this.id);
+  }
+
+  private receiveMessage = (message: XPeerIncomingMessage): void => {
+    console.log(message);
+  };
+
+  public on(
+    event: 'message',
+    handler: (msg: string, peer: XPeer, sub: Subscription) => void
+  ): Subscription {
+    return this.listenerManager.register('s', handler);
   }
 
   public async sendMessage(msg: string): Promise<XPeerResponse> {
