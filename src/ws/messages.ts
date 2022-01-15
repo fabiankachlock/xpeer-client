@@ -4,6 +4,7 @@ import {
   XPeerOutgoingMessageType,
 } from '../xpeer.js';
 
+// @internal
 export class XPeerMessageParser {
   private static readonly messageRegex =
     /^(?<type>.{8})::(?<sender>.{22})::(?<payload>.*)/;
@@ -19,6 +20,7 @@ export class XPeerMessageParser {
   }
 }
 
+// @internal
 export class XPeerMessageParsingInterceptor {
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   private _messageForwarder: (msg: XPeerIncomingMessage) => void = () => {};
@@ -39,6 +41,7 @@ export class XPeerMessageParsingInterceptor {
   }
 }
 
+// @internal
 export class XPeerMessageBuilder {
   static create(
     type: XPeerOutgoingMessageType,

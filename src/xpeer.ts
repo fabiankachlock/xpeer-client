@@ -14,17 +14,17 @@ export type XPeerResponse =
       success: boolean;
     };
 
-export type XPeerCallback<T, P extends XPeer | XVPeer = XPeer | XVPeer> = (
-  data: T,
-  peer: P,
-  sub: Subscription
-) => void;
+export type XPeerCallback<
+  T,
+  P extends XPeerPeer | XPeerVPeer = XPeerPeer | XPeerVPeer
+> = (data: T, peer: P, sub: Subscription) => void;
 
 export interface XPeerMessageHandler {
   guard: (msg: XPeerIncomingMessage) => boolean;
   handler: (msg: XPeerIncomingMessage) => void;
 }
 
+// @internal
 export interface XPeerOperationalClient {
   peerId: string;
   ping(id: string): Promise<boolean>;
@@ -39,7 +39,7 @@ export interface XPeerOperationalClient {
   ): Promise<void>;
 }
 
-export interface XPeer {
+export interface XPeerPeer {
   readonly id: string;
   readonly isVirtual: boolean;
   ping(): Promise<boolean>;
@@ -48,24 +48,32 @@ export interface XPeer {
   once(event: 'message', callback: XPeerCallback<string>): Subscription;
 }
 
-export interface XVPeer<S extends XPeerState = XPeerState> extends XPeer {
+export interface XPeerVPeer<S extends XPeerState = XPeerState>
+  extends XPeerPeer {
   readonly isVirtual: true;
   connect(): Promise<XPeerResponse>;
   disconnect(): Promise<void>;
   patchState(state: S): Promise<XPeerResponse>;
   putState(state: S): Promise<XPeerResponse>;
 
-  // on(event: 'state', callback: XPeerCallback<S>): void;
-  // on(event: 'message', callback: XPeerCallback<string>): void;
+  on(event: 'state', callback: XPeerCallback<S>): Subscription;
+  on(event: 'message', callback: XPeerCallback<string>): Subscription;
 
-  // once(event: 'state', callback: XPeerCallback<S>): void;
-  // once(event: 'message', callback: XPeerCallback<string>): void;
+  once(event: 'state', callback: XPeerCallback<S>): Subscription;
+  once(event: 'message', callback: XPeerCallback<string>): Subscription;
 }
 
 export interface XPeerMessageSource {
   setGuard(guard: (message: XPeerIncomingMessage) => boolean): void;
   setHandler(handler: (message: XPeerIncomingMessage) => void): void;
   redirectBack(message: XPeerIncomingMessage): void;
+}
+
+export interface XPeerClient {
+  sendMessage(to: string, message: string): Promise<XPeerResponse>;
+  getPeer(id: string): Promise<XPeerPeer | XPeerVPeer | undefined>;
+  ping(id: string): Promise<boolean>;
+  disconnect(): void;
 }
 
 export enum XPeerIncomingMessageType {

@@ -1,24 +1,28 @@
 import { Peer } from './peer.js';
 import { Awaiter } from './helper/awaiter.js';
 import { TaskQueue } from './helper/queue.js';
-import { XPeerWSConnection } from './ws/connection.js';
+import { WSConnection } from './ws/connection.js';
 import {
   XPeerMessageBuilder,
   XPeerMessageParsingInterceptor,
 } from './ws/messages.js';
 import {
-  XPeer,
+  XPeerPeer,
+  XPeerClient,
   XPeerIncomingMessage,
   XPeerIncomingMessageType,
   XPeerMessageHandler,
   XPeerOperationalClient,
   XPeerOutgoingMessageType,
+  XPeerResponse,
+  XPeerVPeer,
 } from './xpeer.js';
+import { createXPeerResponse } from 'helper/error.js';
 
 const DEFAULT_PEER_ID = '<<<no-peer-id>>>';
 
-export class XPeerClient {
-  private connection: XPeerWSConnection;
+export class Client implements XPeerClient {
+  private connection: WSConnection;
 
   private tasks = new TaskQueue();
 
@@ -29,7 +33,7 @@ export class XPeerClient {
   private messageHandlers: XPeerMessageHandler[];
 
   constructor(public readonly serverUrl: string) {
-    this.connection = new XPeerWSConnection(serverUrl);
+    this.connection = new WSConnection(serverUrl);
     this.connection.messageForwarder =
       XPeerMessageParsingInterceptor.messageForwarder(
         this.messageDistributer
@@ -136,7 +140,13 @@ export class XPeerClient {
     return foundPeer;
   }
 
-  public async getPeer(id: string): Promise<XPeer | undefined> {
+  public sendMessage(to: string, message: string): Promise<XPeerResponse> {
+    return Promise.resolve(createXPeerResponse('not implemented'));
+  }
+
+  public async getPeer(
+    id: string
+  ): Promise<XPeerPeer | XPeerVPeer | undefined> {
     const available = await this.ping(id);
     if (available) {
       return new Peer(id, this.createConnectionForwardRef());

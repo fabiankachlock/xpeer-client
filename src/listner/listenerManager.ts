@@ -1,6 +1,7 @@
 import { nanoid } from 'nanoid';
 import { Subscription } from './subscription';
 
+// @internal
 export class ListenerManager<T> {
   private handlers: Record<
     string,

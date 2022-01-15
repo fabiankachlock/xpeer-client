@@ -4,7 +4,7 @@ import { Awaiter } from './helper/awaiter.js';
 import { createXPeerResponse } from './helper/error.js';
 import { XPeerMessageBuilder } from './ws/messages.js';
 import {
-  XPeer,
+  XPeerPeer,
   XPeerIncomingMessage,
   XPeerIncomingMessageType,
   XPeerMessageSource,
@@ -13,7 +13,7 @@ import {
   XPeerResponse,
 } from './xpeer.js';
 
-export class Peer implements XPeer {
+export class Peer implements XPeerPeer {
   readonly isVirtual: boolean;
 
   private readonly messageSource: XPeerMessageSource;
@@ -40,7 +40,14 @@ export class Peer implements XPeer {
 
   public on(
     event: 'message',
-    handler: (msg: string, peer: XPeer, sub: Subscription) => void
+    handler: (msg: string, peer: XPeerPeer, sub: Subscription) => void
+  ): Subscription {
+    return this.listenerManager.register('s', handler);
+  }
+
+  public once(
+    event: 'message',
+    handler: (msg: string, peer: XPeerPeer, sub: Subscription) => void
   ): Subscription {
     return this.listenerManager.register('s', handler);
   }

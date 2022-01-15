@@ -1,16 +1,19 @@
 import { Awaiter } from '../helper/awaiter.js';
 
+// @internal
 export type XPeerWSConnectionOptions = {
   retries: number;
   retryInterval: number;
 };
 
+// @internal
 export const DefaultXPeerWSConnectionOptions = {
   retries: 5,
   retryInterval: 2000,
 };
 
-export class XPeerWSConnection {
+// @internal
+export class WSConnection {
   private socket: WebSocket | undefined;
 
   private options: XPeerWSConnectionOptions & { retriesLeft: number };

@@ -1,5 +1,8 @@
+import { Client } from 'client.js';
+import { XPeerClient } from './xpeer.js';
+
 export class XPeer {
-  connect(): void {
-    console.log('wip');
+  static createConnection(serverUrl: string): XPeerClient {
+    return new Client(serverUrl);
   }
 }
