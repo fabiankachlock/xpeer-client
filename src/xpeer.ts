@@ -28,7 +28,7 @@ export interface XPeerMessageHandler {
 export interface XPeerOperationalClient {
   peerId: string;
   ping(id: string): Promise<boolean>;
-  getMessageSource(id: string): XPeerMessageSource;
+  messageSource: XPeerMessageSource;
   executeTask(
     func: (params: {
       send(message: string): Promise<void>;
@@ -63,14 +63,14 @@ export interface XPeerVPeer<S extends XPeerState = XPeerState>
   once(event: 'message', callback: XPeerCallback<string>): Subscription;
 }
 
-export interface XPeerMessageSource {
-  setGuard(guard: (message: XPeerIncomingMessage) => boolean): void;
-  setHandler(handler: (message: XPeerIncomingMessage) => void): void;
-  redirectBack(message: XPeerIncomingMessage): void;
+export interface XPeerMessageSource<T = XPeerIncomingMessage> {
+  setGuard(guard: (message: T) => boolean): void;
+  setHandler(handler: (message: T) => void): void;
+  redirectBack(message: T): void;
+  destroy(): void;
 }
 
 export interface XPeerClient {
-  sendMessage(to: string, message: string): Promise<XPeerResponse>;
   getPeer(id: string): Promise<XPeerPeer | XPeerVPeer | undefined>;
   ping(id: string): Promise<boolean>;
   disconnect(): void;

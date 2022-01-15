@@ -18,8 +18,6 @@ import {
 export class Peer implements XPeerPeer {
   readonly isVirtual: boolean;
 
-  private readonly messageSource: XPeerMessageSource;
-
   private listenerManager = new ListenerManager<string>();
 
   constructor(
@@ -27,9 +25,8 @@ export class Peer implements XPeerPeer {
     private readonly client: XPeerOperationalClient
   ) {
     this.isVirtual = false;
-    this.messageSource = client.getMessageSource(id);
-    this.messageSource.setGuard(message => message.sender === id);
-    this.messageSource.setHandler(this.receiveMessage);
+    this.client.messageSource.setGuard(message => message.sender === id);
+    this.client.messageSource.setHandler(this.receiveMessage);
   }
 
   public ping(): Promise<boolean> {
@@ -37,15 +34,19 @@ export class Peer implements XPeerPeer {
   }
 
   private receiveMessage = (message: XPeerIncomingMessage): void => {
-    console.log(message);
+    console.log('in peer handler:', message);
+    this.listenerManager.trigger(XPeerEvent.message, message.payload, this);
   };
 
   public on(event: 'message', handler: XPeerCallback<string>): Subscription {
-    return this.listenerManager.register(XPeerEvent.message, handler);
+    return this.listenerManager.register(event, handler);
   }
 
   public once(event: 'message', handler: XPeerCallback<string>): Subscription {
-    return this.listenerManager.register('s', handler);
+    return this.listenerManager.register(event, (msg, peer, sub) => {
+      handler(msg, peer, sub);
+      sub.cancel();
+    });
   }
 
   public async sendMessage(msg: string): Promise<XPeerResponse> {

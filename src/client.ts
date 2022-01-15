@@ -14,10 +14,9 @@ import {
   XPeerMessageHandler,
   XPeerOperationalClient,
   XPeerOutgoingMessageType,
-  XPeerResponse,
   XPeerVPeer,
 } from './xpeer.js';
-import { createXPeerResponse } from './helper/error.js';
+import { MessageDistributer } from './listener/messageDistributer.js';
 
 const DEFAULT_PEER_ID = '<<<no-peer-id>>>';
 
@@ -32,6 +31,8 @@ export class Client implements XPeerClient {
 
   private messageHandlers: XPeerMessageHandler[];
 
+  private messageSource: MessageDistributer<XPeerIncomingMessage>;
+
   constructor(public readonly serverUrl: string) {
     this.connection = new WSConnection(serverUrl);
     this.connection.messageForwarder =
@@ -42,8 +43,13 @@ export class Client implements XPeerClient {
     this.messageHandlers = [
       this.idMessageHandler,
       this.pingMessageHandler,
+      this.messageMessageHandler,
       this.defaultMessageHandler,
     ];
+
+    this.messageSource = new MessageDistributer(
+      this.defaultMessageHandler.handler
+    );
   }
 
   private messageDistributer = (message: XPeerIncomingMessage) => {
@@ -61,10 +67,9 @@ export class Client implements XPeerClient {
     () => {};
 
   private messageHandler(message: XPeerIncomingMessage) {
-    console.log('[Client] message in final handler');
+    console.log('[Client] message in client handler');
     for (const handler of this.messageHandlers) {
       if (handler.guard(message)) {
-        console.log(handler);
         handler.handler(message);
         break;
       }
@@ -73,9 +78,15 @@ export class Client implements XPeerClient {
 
   private defaultMessageHandler: XPeerMessageHandler = {
     // handle incoming messages
-    guard: message => message.type === XPeerIncomingMessageType.MSG_SEND,
+    guard: () => true,
     handler: message =>
       console.log(`[${message.sender}] received ${message.payload}`),
+  };
+
+  private messageMessageHandler: XPeerMessageHandler = {
+    // handle incoming messages
+    guard: message => message.type === XPeerIncomingMessageType.MSG_SEND,
+    handler: message => this.messageSource.distribute(message),
   };
 
   private pingMessageHandler: XPeerMessageHandler = {
@@ -140,10 +151,6 @@ export class Client implements XPeerClient {
     return foundPeer;
   }
 
-  public sendMessage(to: string, message: string): Promise<XPeerResponse> {
-    return Promise.resolve(createXPeerResponse('not implemented'));
-  }
-
   public async getPeer(
     id: string
   ): Promise<XPeerPeer | XPeerVPeer | undefined> {
@@ -158,15 +165,7 @@ export class Client implements XPeerClient {
     const client: XPeerOperationalClient = {
       peerId: this.peerId,
       ping: (id: string) => this.ping(id),
-      getMessageSource: () => ({
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
-        setGuard: () => {},
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
-        setHandler: () => {},
-        receiveMessage: () => Promise.resolve(undefined),
-        // eslint-disable-next-line @typescript-eslint/no-empty-function
-        redirectBack: () => {},
-      }),
+      messageSource: this.messageSource.createMessageSource(),
       executeTask: async task => {
         this.openTask = true;
         await this.tasks.execute(async () => {
