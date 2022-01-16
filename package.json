@@ -1,6 +1,6 @@
 {
-  "name": "xpeer",
-  "version": "0.0.0-development",
+  "name": "@xpeer/client",
+  "version": "0.0.0",
   "description": "xpeer js client",
   "repository": {
     "type": "git",
@@ -9,11 +9,12 @@
   "license": "MIT",
   "author": {
     "name": "Fabian Kachlock",
-    "email": "contect@fabiankachlock.dev",
+    "email": "contact@fabiankachlock.dev",
     "url": "https://github.com/fabiankachlock"
   },
   "engines": {
-    "node": ">=12.0"
+    "node": ">=14.0",
+    "yarn": "^1 <2"
   },
   "main": "./dist/src/index.js",
   "files": [
@@ -21,12 +22,18 @@
   ],
   "scripts": {
     "build": "tsc",
-    "clean": "rm -rf ./lib/",
+    "build:watch": "tsc -w",
+    "clean": "rm -rf ./dist/",
     "lint": "eslint ./src/ --fix",
+    "lint:ci": "eslint ./src/ --no-fix --max-warnings 50",
     "format": "prettier --write \"./src/**/*.{ts,js,json,d.ts}\"",
-    "prepare": "husky install",
+    "format:ci": "prettier --check \"./src/**/*.{ts,js,json,d.ts}\"",
+    "test": "jest",
     "test:watch": "jest --watch",
-    "test": "jest --coverage",
+    "test:cov": "jest --coverage",
+    "prepare": "husky install",
+    "preversion": "yarn ci && yarn clean && yarn build && yarn test",
+    "postversion": "git push --tags && git push && npm publish",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
@@ -55,6 +62,6 @@
     "typescript": "^4.2.4"
   },
   "lint-staged": {
-    "*.ts": "eslint --cache --cache-location .eslintcache --fix"
+    "*.ts": "yarn lint && yarn format"
   }
 }
