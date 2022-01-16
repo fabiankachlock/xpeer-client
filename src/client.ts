@@ -94,16 +94,15 @@ export class Client implements XPeerClient {
     // handle incoming pings
     guard: message => message.type === XPeerIncomingMessageType.MSG_PING,
     handler: message => {
-      Logger.Client.debug('received ping from', message.sender);
-      this.tasksQueue.execute(async () => {
-        await this.connection.send(
-          XPeerMessageBuilder.create(
-            XPeerOutgoingMessageType.OPR_PONG,
-            message.sender,
-            ''
-          )
-        );
-      });
+      Logger.Client.debug(`received ping from ${message.sender} sending pong`);
+      // this doesn't has to be executed on task queue, because it doesn't get a response
+      this.connection.send(
+        XPeerMessageBuilder.create(
+          XPeerOutgoingMessageType.OPR_PONG,
+          message.sender,
+          ''
+        )
+      );
     },
   };
 
@@ -114,7 +113,7 @@ export class Client implements XPeerClient {
       message.sender === message.payload &&
       message.sender !== this.peerId,
     handler: message => {
-      Logger.Client.debug('[Client] received id:', message.payload);
+      Logger.Client.debug(`received id: ${message.payload}`);
       this.peerId = message.payload;
     },
   };
@@ -124,7 +123,7 @@ export class Client implements XPeerClient {
     this.hasOpenTask = true;
     await this.tasksQueue.execute(async () => {
       const awaiter = new Awaiter();
-      Logger.Client.debug('sending ping to', id);
+      Logger.Client.debug(`sending ping to ${id}`);
       await this.connection.send(
         XPeerMessageBuilder.create(XPeerOutgoingMessageType.OPR_PING, id, '')
       );
@@ -144,6 +143,7 @@ export class Client implements XPeerClient {
           Logger.Client.error(message.payload);
           awaiter.callback({});
         } else {
+          Logger.Client.debug('redirect message back');
           this.messageHandler(message);
         }
       };
@@ -177,6 +177,7 @@ export class Client implements XPeerClient {
               this.forwardMessageToTask = msg => {
                 const result = handler(msg);
                 if (!result) {
+                  Logger.Client.debug('redirect message back');
                   this.messageHandler(msg);
                 }
               };

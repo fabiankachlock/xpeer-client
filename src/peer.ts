@@ -13,7 +13,7 @@ import {
   XPeerEvent,
   XPeerCallback,
 } from './xpeer.js';
-import { Logger } from 'helper/logger.js';
+import { Logger } from './helper/logger.js';
 
 export class Peer implements XPeerPeer {
   public readonly isVirtual: boolean;
