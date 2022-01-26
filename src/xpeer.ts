@@ -109,4 +109,5 @@ export type XPeerIncomingMessage = {
 // @internal
 export enum XPeerEvent {
   message = 'message',
+  stateUpdate = 'state',
 }
