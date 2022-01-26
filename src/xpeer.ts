@@ -52,7 +52,7 @@ export interface XPeerVPeer<S extends XPeerState = XPeerState>
   extends XPeerPeer {
   readonly isVirtual: true;
   connect(): Promise<XPeerResponse>;
-  disconnect(): Promise<void>;
+  disconnect(): Promise<XPeerResponse>;
   patchState(state: S): Promise<XPeerResponse>;
   putState(state: S): Promise<XPeerResponse>;
 
