@@ -37,6 +37,7 @@ export class TaskQueue {
       const nextItem = this._queue[0];
       const result = await nextItem.task();
       nextItem.awaiter.callback(result);
+      console.log('[DEBUG] Executed task');
       this._queue.shift();
       this.working = false;
     }

@@ -208,7 +208,8 @@ export class VPeer<S extends XPeerState> implements XPeerVPeer<S> {
       receiveMessage(message => {
         if (
           message.type === XPeerIncomingMessageType.MSG_SUCCESS &&
-          message.sender === this.id
+          message.sender === this.client.peerId &&
+          message.payload === this.id
         ) {
           awaiter.callback({});
           return true;

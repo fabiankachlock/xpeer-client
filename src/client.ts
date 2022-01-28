@@ -83,7 +83,9 @@ export class Client implements XPeerClient {
     // handle incoming messages
     guard: () => true,
     handler: message =>
-      Logger.Default.log(`[${message.sender}] received ${message.payload}`),
+      Logger.Default.log(
+        `[DefaultHandler] [${message.sender}] received ${message.payload}`
+      ),
   };
 
   private _messageMessageHandler: XPeerMessageHandler = {
@@ -227,6 +229,7 @@ export class Client implements XPeerClient {
         ) {
           Logger.Client.debug(`created ${message.payload}`);
           vpeerId = message.payload;
+          awaiter.callback({});
         } else if (
           message.type === XPeerIncomingMessageType.MSG_ERROR &&
           message.sender === this.peerId
