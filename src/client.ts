@@ -19,6 +19,7 @@ import {
 } from './xpeer.js';
 import { MessageDistributer } from './listener/messageDistributer.js';
 import { Logger } from './helper/logger.js';
+import { VPeer } from './vpeer.js';
 
 const DEFAULT_PEER_ID = '<<<no-peer-id>>>';
 
@@ -120,7 +121,14 @@ export class Client implements XPeerClient {
   };
 
   public async ping(id: string): Promise<boolean> {
+    return (await this._ping(id)).success;
+  }
+
+  private async _ping(
+    id: string
+  ): Promise<{ success: boolean; payload: string }> {
     let foundPeer = false;
+    let payload = '';
     this.hasOpenTask = true;
     await this.tasksQueue.execute(async () => {
       const awaiter = new Awaiter();
@@ -136,6 +144,7 @@ export class Client implements XPeerClient {
         ) {
           Logger.Client.debug(`ping ok ${id}`);
           foundPeer = true;
+          payload = message.payload;
           awaiter.callback({});
         } else if (
           message.type === XPeerIncomingMessageType.MSG_ERROR &&
@@ -151,14 +160,19 @@ export class Client implements XPeerClient {
       await awaiter.promise;
       this.hasOpenTask = false;
     });
-    return foundPeer;
+    return {
+      success: foundPeer,
+      payload,
+    };
   }
 
   public async getPeer(
     id: string
   ): Promise<XPeerPeer | XPeerVPeer | undefined> {
-    const available = await this.ping(id);
-    if (available) {
+    const response = await this._ping(id);
+    if (response.success && response.payload === 'virtual') {
+      return new VPeer(id, this.createOperationalClient());
+    } else if (response.success) {
       return new Peer(id, this.createOperationalClient());
     }
     return undefined;
