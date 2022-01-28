@@ -159,118 +159,28 @@ export class VPeer<S extends XPeerState> implements XPeerVPeer<S> {
   }
 
   public async disconnect(): Promise<XPeerResponse> {
+    this.logger.debug('disconnecting');
     this.listenerManager.clearAllListeners();
-    let error: string | undefined = undefined;
-    this.logger.debug('connecting');
-    await this.client.executeTask(async ({ receiveMessage, send }) => {
-      const awaiter = new Awaiter();
-      await send(
-        XPeerMessageBuilder.create(
-          XPeerOutgoingMessageType.OPR_DISCONNECT_V_PEER,
-          this.id,
-          ''
-        )
-      );
-
-      receiveMessage(message => {
-        if (
-          message.type === XPeerIncomingMessageType.MSG_SUCCESS &&
-          message.sender === this.id
-        ) {
-          this.logger.debug('disconnect successful');
-          awaiter.callback({});
-          return true;
-        } else if (
-          message.type === XPeerIncomingMessageType.MSG_ERROR &&
-          message.sender === this.client.peerId
-        ) {
-          error = message.payload;
-          this.logger.error(error);
-          awaiter.callback({});
-          return true;
-        }
-        return false;
-      });
-      await awaiter.promise;
-    });
-
-    return createXPeerResponse(error);
+    return await this.sendWebsocketMessage(
+      XPeerOutgoingMessageType.OPR_DISCONNECT_V_PEER,
+      ''
+    );
   }
 
   public async patchState(state: S): Promise<XPeerResponse> {
-    let error: string | undefined = undefined;
     this.logger.debug('patching state');
-    await this.client.executeTask(async ({ receiveMessage, send }) => {
-      const awaiter = new Awaiter();
-      await send(
-        XPeerMessageBuilder.create(
-          XPeerOutgoingMessageType.OPR_PATCH_SHARED_STATE,
-          this.id,
-          JSON.stringify(state)
-        )
-      );
-
-      receiveMessage(message => {
-        if (
-          message.type === XPeerIncomingMessageType.MSG_SUCCESS &&
-          message.sender === this.id
-        ) {
-          this.logger.debug('state patch successful');
-          awaiter.callback({});
-          return true;
-        } else if (
-          message.type === XPeerIncomingMessageType.MSG_ERROR &&
-          message.sender === this.client.peerId
-        ) {
-          error = message.payload;
-          this.logger.error(error);
-          awaiter.callback({});
-          return true;
-        }
-        return false;
-      });
-      await awaiter.promise;
-    });
-
-    return createXPeerResponse(error);
+    return await this.sendWebsocketMessage(
+      XPeerOutgoingMessageType.OPR_PATCH_SHARED_STATE,
+      JSON.stringify(state)
+    );
   }
 
   public async putState(state: S): Promise<XPeerResponse> {
-    let error: string | undefined = undefined;
     this.logger.debug('putting state');
-    await this.client.executeTask(async ({ receiveMessage, send }) => {
-      const awaiter = new Awaiter();
-      await send(
-        XPeerMessageBuilder.create(
-          XPeerOutgoingMessageType.OPR_PUT_SHARED_STATE,
-          this.id,
-          JSON.stringify(state)
-        )
-      );
-
-      receiveMessage(message => {
-        if (
-          message.type === XPeerIncomingMessageType.MSG_SUCCESS &&
-          message.sender === this.id
-        ) {
-          this.logger.debug('state put successful');
-          awaiter.callback({});
-          return true;
-        } else if (
-          message.type === XPeerIncomingMessageType.MSG_ERROR &&
-          message.sender === this.client.peerId
-        ) {
-          error = message.payload;
-          this.logger.error(error);
-          awaiter.callback({});
-          return true;
-        }
-        return false;
-      });
-      await awaiter.promise;
-    });
-
-    return createXPeerResponse(error);
+    return await this.sendWebsocketMessage(
+      XPeerOutgoingMessageType.OPR_PUT_SHARED_STATE,
+      JSON.stringify(state)
+    );
   }
 
   public destroy(): void {
@@ -284,5 +194,38 @@ export class VPeer<S extends XPeerState> implements XPeerVPeer<S> {
         )
       );
     });
+  }
+
+  private async sendWebsocketMessage(
+    type: XPeerOutgoingMessageType,
+    payload: string
+  ): Promise<XPeerResponse> {
+    let error: string | undefined = undefined;
+    await this.client.executeTask(async ({ receiveMessage, send }) => {
+      const awaiter = new Awaiter();
+      await send(XPeerMessageBuilder.create(type, this.id, payload));
+
+      receiveMessage(message => {
+        if (
+          message.type === XPeerIncomingMessageType.MSG_SUCCESS &&
+          message.sender === this.id
+        ) {
+          awaiter.callback({});
+          return true;
+        } else if (
+          message.type === XPeerIncomingMessageType.MSG_ERROR &&
+          message.sender === this.client.peerId
+        ) {
+          error = message.payload;
+          this.logger.error(error);
+          awaiter.callback({});
+          return true;
+        }
+        return false;
+      });
+      await awaiter.promise;
+    });
+
+    return createXPeerResponse(error);
   }
 }
