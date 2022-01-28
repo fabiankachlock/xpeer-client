@@ -15,6 +15,7 @@ import {
   XPeerOperationalClient,
   XPeerOutgoingMessageType,
   XPeerVPeer,
+  XPeerValueResponse,
 } from './xpeer.js';
 import { MessageDistributer } from './listener/messageDistributer.js';
 import { Logger } from './helper/logger.js';
@@ -189,6 +190,52 @@ export class Client implements XPeerClient {
     };
     return client;
   };
+
+  public async createVPeer(): Promise<XPeerValueResponse<string>> {
+    let vpeerId = '';
+    let error: string | undefined = undefined;
+    this.hasOpenTask = true;
+    await this.tasksQueue.execute(async () => {
+      const awaiter = new Awaiter();
+      Logger.Client.debug('creating vpeer');
+      await this.connection.send(
+        XPeerMessageBuilder.create(
+          XPeerOutgoingMessageType.OPR_CREATE_V_PEER,
+          this.peerId,
+          ''
+        )
+      );
+
+      this.forwardMessageToTask = message => {
+        if (
+          message.type === XPeerIncomingMessageType.MSG_PEER_ID &&
+          message.sender !== message.payload
+        ) {
+          Logger.Client.debug(`created ${message.payload}`);
+          vpeerId = message.payload;
+        } else if (
+          message.type === XPeerIncomingMessageType.MSG_ERROR &&
+          message.sender === this.peerId
+        ) {
+          Logger.Client.error(message.payload);
+          error = message.payload;
+          awaiter.callback({});
+        } else {
+          Logger.Client.debug('redirect message back');
+          this.messageHandler(message);
+        }
+      };
+      await awaiter.promise;
+      this.hasOpenTask = false;
+    });
+    return error
+      ? {
+          message: error,
+        }
+      : {
+          payload: vpeerId,
+        };
+  }
 
   public disconnect(): void {
     this.connection.close();

@@ -14,6 +14,12 @@ export type XPeerResponse =
       success: boolean;
     };
 
+export type XPeerValueResponse<T = string> =
+  | XPeerError
+  | {
+      payload: T;
+    };
+
 export type XPeerCallback<
   T,
   P extends XPeerPeer | XPeerVPeer = XPeerPeer | XPeerVPeer
@@ -55,6 +61,7 @@ export interface XPeerVPeer<S extends XPeerState = XPeerState>
   disconnect(): Promise<XPeerResponse>;
   patchState(state: S): Promise<XPeerResponse>;
   putState(state: S): Promise<XPeerResponse>;
+  delete(): void;
 
   on(event: 'state', callback: XPeerCallback<S>): Subscription;
   on(event: 'message', callback: XPeerCallback<string>): Subscription;
@@ -73,6 +80,7 @@ export interface XPeerMessageSource<T = XPeerIncomingMessage> {
 export interface XPeerClient {
   getPeer(id: string): Promise<XPeerPeer | XPeerVPeer | undefined>;
   ping(id: string): Promise<boolean>;
+  createVPeer(): Promise<XPeerValueResponse>;
   disconnect(): void;
 }
 
