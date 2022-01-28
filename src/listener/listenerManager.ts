@@ -59,4 +59,17 @@ export class ListenerManager<T> {
       );
     }
   }
+
+  public clearAllListeners(): void {
+    for (const event of Object.keys(this.handlers)) {
+      this.clearListeners(event);
+    }
+  }
+
+  public clearListeners(event: string): void {
+    for (const handler of this.handlers[event]) {
+      handler.sub.cancel();
+    }
+    delete this.handlers[event];
+  }
 }
