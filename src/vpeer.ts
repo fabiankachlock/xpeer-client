@@ -159,6 +159,7 @@ export class VPeer<S extends XPeerState> implements XPeerVPeer<S> {
   }
 
   public async disconnect(): Promise<XPeerResponse> {
+    this.listenerManager.clearAllListeners();
     let error: string | undefined = undefined;
     this.logger.debug('connecting');
     await this.client.executeTask(async ({ receiveMessage, send }) => {
@@ -270,5 +271,18 @@ export class VPeer<S extends XPeerState> implements XPeerVPeer<S> {
     });
 
     return createXPeerResponse(error);
+  }
+
+  public destroy(): void {
+    this.listenerManager.clearAllListeners();
+    this.client.executeTask(async ({ send }) => {
+      await send(
+        XPeerMessageBuilder.create(
+          XPeerOutgoingMessageType.OPR_DELETE_V_PEER,
+          this.id,
+          ''
+        )
+      );
+    });
   }
 }

@@ -61,7 +61,7 @@ export interface XPeerVPeer<S extends XPeerState = XPeerState>
   disconnect(): Promise<XPeerResponse>;
   patchState(state: S): Promise<XPeerResponse>;
   putState(state: S): Promise<XPeerResponse>;
-  delete(): void;
+  destroy(): void;
 
   on(event: 'state', callback: XPeerCallback<S>): Subscription;
   on(event: 'message', callback: XPeerCallback<string>): Subscription;
