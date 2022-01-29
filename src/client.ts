@@ -83,7 +83,7 @@ export class Client implements XPeerClient {
     // handle incoming messages
     guard: () => true,
     handler: message =>
-      Logger.Default.log(
+      Logger.Default.debug(
         `[DefaultHandler] [${message.sender}] received ${message.payload}`
       ),
   };

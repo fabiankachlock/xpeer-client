@@ -5,15 +5,32 @@ export class Logger {
   static Socket = Logger.Default.withPrefix('[Socket]');
   static Peer = Logger.Default.withPrefix('[Peer]');
   static VPeer = Logger.Default.withPrefix('[VPeer]');
+  static Queue = Logger.Default.withPrefix('[Queue]');
 
   private constructor(
     private readonly prefix: string[] = [],
-    private readonly debugMode = true
+    private readonly debugMode = false
   ) {
-    if (!debugMode) {
+    this.enabledDebug(debugMode);
+  }
+
+  private enabledDebug(isEnabled: boolean): void {
+    if (!isEnabled) {
       // eslint-disable-next-line @typescript-eslint/no-empty-function
       this.debug = () => {};
+    } else {
+      this.debug = (...data: any[]): void =>
+        console.log(...this.prefix, ...data);
     }
+  }
+
+  static setDebugMode(isEnabled: boolean): void {
+    Logger.Default.enabledDebug(isEnabled);
+    Logger.Client.enabledDebug(isEnabled);
+    Logger.Socket.enabledDebug(isEnabled);
+    Logger.Peer.enabledDebug(isEnabled);
+    Logger.VPeer.enabledDebug(isEnabled);
+    Logger.Queue.enabledDebug(isEnabled);
   }
 
   public withPrefix(prefix: string): Logger {

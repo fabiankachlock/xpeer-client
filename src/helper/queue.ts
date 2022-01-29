@@ -1,4 +1,5 @@
 import { Awaiter } from './awaiter.js';
+import { Logger } from './logger.js';
 
 // @internal
 type Task<T> = () => Promise<T>;
@@ -37,7 +38,7 @@ export class TaskQueue {
       const nextItem = this._queue[0];
       const result = await nextItem.task();
       nextItem.awaiter.callback(result);
-      console.log('[DEBUG] Executed task');
+      Logger.Queue.debug('executed task');
       this._queue.shift();
       this.working = false;
     }

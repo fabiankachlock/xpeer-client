@@ -81,7 +81,7 @@ export class WSConnection {
     }
   };
   private handleMessage = (event: MessageEvent): void => {
-    Logger.Socket.log(`received from ${this.url}`);
+    Logger.Socket.debug(`received from ${this.url}`);
     this._messageForwarder(event.data);
   };
 
