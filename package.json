@@ -31,6 +31,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
+    "ci": "yarn lint:ci && yarn format:ci",
     "prepare": "husky install",
     "preversion": "yarn ci && yarn clean && yarn build && yarn test",
     "postversion": "git push --tags && git push && npm publish",
