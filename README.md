@@ -6,9 +6,9 @@ A Javascript client implementing the [xpeer spec](https://github.com/fabiankachl
 
 ## Installation
 
-`npm i @xpeer/client`
+`npm i xpeer-client`
 or
-`yarn add @xpeer/client`
+`yarn add xpeer-client`
 
 ## Usage
 
