@@ -9,3 +9,6 @@ export class XPeer {
     return new Client(serverUrl);
   }
 }
+
+export * from './xpeer.js';
+export * from './listener/subscription.js';

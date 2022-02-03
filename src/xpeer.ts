@@ -70,6 +70,7 @@ export interface XPeerVPeer<S extends XPeerState = XPeerState>
   once(event: 'message', callback: XPeerCallback<string>): Subscription;
 }
 
+// @internal
 export interface XPeerMessageSource<T = XPeerIncomingMessage> {
   setGuard(guard: (message: T) => boolean): void;
   setHandler(handler: (message: T) => void): void;
@@ -108,6 +109,7 @@ export enum XPeerOutgoingMessageType {
   OPR_PATCH_SHARED_STATE = 'patState',
 }
 
+//@internal
 export type XPeerIncomingMessage = {
   type: XPeerIncomingMessageType;
   sender: string;
