@@ -41,7 +41,6 @@ export class TaskQueue {
       awaiter: new Awaiter<T>(),
     };
 
-    console.log('execute', this);
     this._queue.push(item as QueueItem<unknown>);
     if (!this.stopped) {
       this.tryExecute();
