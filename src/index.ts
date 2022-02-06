@@ -3,7 +3,9 @@ import { Client } from './client.js';
 import { XPeerClient } from './xpeer.js';
 
 export class XPeer {
-  static Logger = Logger;
+  static Logger = {
+    setDebugMode: (enabled: boolean): void => Logger.setDebugMode(enabled),
+  };
 
   static createConnection(serverUrl: string): XPeerClient {
     return new Client(serverUrl);
@@ -12,3 +14,4 @@ export class XPeer {
 
 export * from './xpeer.js';
 export * from './listener/subscription.js';
+export * from './helper/logger.js';

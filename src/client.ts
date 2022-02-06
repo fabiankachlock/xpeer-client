@@ -37,6 +37,8 @@ export class Client implements XPeerClient {
   private messageDistributer: MessageDistributer<XPeerIncomingMessage>;
 
   constructor(public readonly serverUrl: string) {
+    this.tasksQueue.stop();
+
     this.connection = new WSConnection(serverUrl);
     this.connection.messageForwarder =
       XPeerMessageParsingInterceptor.messageForwarder(
@@ -119,6 +121,9 @@ export class Client implements XPeerClient {
     handler: message => {
       Logger.Client.debug(`received id: ${message.payload}`);
       this.peerId = message.payload;
+      if (this.tasksQueue.isStopped) {
+        this.tasksQueue.continue();
+      }
     },
   };
 
@@ -131,8 +136,8 @@ export class Client implements XPeerClient {
   ): Promise<{ success: boolean; payload: string }> {
     let foundPeer = false;
     let payload = '';
-    this.hasOpenTask = true;
     await this.tasksQueue.execute(async () => {
+      this.hasOpenTask = true;
       const awaiter = new Awaiter();
       Logger.Client.debug(`sending ping to ${id}`);
       await this.connection.send(
@@ -186,8 +191,8 @@ export class Client implements XPeerClient {
       messageSource: this.messageDistributer.createMessageSource(),
       ping: (id: string) => this.ping(id),
       executeTask: async task => {
-        this.hasOpenTask = true;
         await this.tasksQueue.execute(async () => {
+          this.hasOpenTask = true;
           await task({
             send: (msg: string) => this.connection.send(msg),
             receiveMessage: handler => {
@@ -210,8 +215,8 @@ export class Client implements XPeerClient {
   public async createVPeer(): Promise<XPeerValueResponse<string>> {
     let vpeerId = '';
     let error: string | undefined = undefined;
-    this.hasOpenTask = true;
     await this.tasksQueue.execute(async () => {
+      this.hasOpenTask = true;
       const awaiter = new Awaiter();
       Logger.Client.debug('creating vpeer');
       await this.connection.send(

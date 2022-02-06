@@ -16,8 +16,23 @@ export class TaskQueue {
 
   private working = false;
 
+  private stopped = false;
+
+  get isStopped(): boolean {
+    return this.stopped;
+  }
+
   constructor() {
     this._queue = [];
+  }
+
+  public stop(): void {
+    this.stopped = true;
+  }
+
+  public continue(): void {
+    this.stopped = false;
+    this.tryExecute();
   }
 
   async execute<T>(task: Task<T>): Promise<T> {
@@ -26,14 +41,17 @@ export class TaskQueue {
       awaiter: new Awaiter<T>(),
     };
 
+    console.log('execute', this);
     this._queue.push(item as QueueItem<unknown>);
-    this.tryExecute();
+    if (!this.stopped) {
+      this.tryExecute();
+    }
 
     return item.awaiter.promise;
   }
 
   private async tryExecute(): Promise<void> {
-    if (!this.working && this._queue.length > 0) {
+    if (!this.stopped && !this.working && this._queue.length > 0) {
       this.working = true;
       const nextItem = this._queue[0];
       const result = await nextItem.task();
